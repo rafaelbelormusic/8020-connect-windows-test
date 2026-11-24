@@ -1,0 +1,8 @@
+name: probe
+on: {workflow_dispatch: {}}
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: windows-2025
+    timeout-minutes: 3
+    steps: [{run: 'echo ok'}]
