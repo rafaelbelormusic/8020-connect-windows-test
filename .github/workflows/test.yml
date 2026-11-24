@@ -1,0 +1,40 @@
+name: windows-test
+on:
+  workflow_dispatch:
+    inputs:
+      flavors: {default: '["current","scaled","legacy"]'}
+permissions: {contents: read}
+concurrency: {group: windows-test}
+jobs:
+  host:
+    strategy: {fail-fast: false, matrix: {flavor: "${{ fromJSON(inputs.flavors) }}"}}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}"}
+        run: mkdir -p out && test -n "$ROOM_KEY" && CHROME=$(which google-chrome) node host.mjs "qa-win-$ROOM_KEY-${{ github.run_id }}-${{ matrix.flavor }}" out
+  app:
+    strategy: {fail-fast: false, matrix: {flavor: "${{ fromJSON(inputs.flavors) }}"}}
+    runs-on: ${{ matrix.flavor == 'legacy' && 'windows-2022' || 'windows-2025' }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROOM_KEY: ${{ secrets.ROOM_KEY }}
+          FILE: ${{ matrix.flavor == 'legacy' && '8020-Connect-0.2.52-windows-7-8-x64.exe' || '8020-Connect-0.2.52-x64.exe' }}
+          SHA: ${{ matrix.flavor == 'legacy' && 'f8a505c321daee4e152151db1ae25855bd4d2ec3b3c65382e2fe6ea30c39f38f' || '6e4ed365baf08f050db4f2bad3c3f78b2f56b253e3c3e5fc6c5c45b6791846f0' }}
+        run: |
+          if(-not $env:ROOM_KEY){throw 'ROOM_KEY fehlt'}
+          gh release download test-build -R ${{ github.repository }} -p $env:FILE
+          $h=(Get-FileHash -Algorithm SHA256 $env:FILE).Hash.ToLower(); "SHA256 $h"; if($h -ne $env:SHA){throw 'Prüfsumme falsch'}
+          if('${{ matrix.flavor }}' -eq 'scaled'){powershell -NoProfile -ExecutionPolicy Bypass -File scale.ps1}
+          Start-Process ".\$($env:FILE)" -ArgumentList '/S' -Wait
+          $e=Get-ChildItem "$env:LOCALAPPDATA\Programs","$env:ProgramFiles" -Recurse -Filter '8020 Connect.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          node guest.mjs "$($e.FullName)" "qa-win-$env:ROOM_KEY-${{ github.run_id }}-${{ matrix.flavor }}"
