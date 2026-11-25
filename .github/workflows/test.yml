@@ -2,12 +2,13 @@ name: windows-test
 on:
   workflow_dispatch:
     inputs:
+      runs: {default: '[1]'}
       flavors: {default: '["current","scaled","legacy"]'}
 permissions: {contents: read}
 concurrency: {group: windows-test}
 jobs:
   host:
-    strategy: {fail-fast: false, matrix: {flavor: "${{ fromJSON(inputs.flavors) }}"}}
+    strategy: {fail-fast: false, matrix: {flavor: "${{ fromJSON(inputs.flavors) }}", n: "${{ fromJSON(inputs.runs) }}"}}
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -15,9 +16,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 24}
       - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}"}
-        run: mkdir -p out && test -n "$ROOM_KEY" && CHROME=$(which google-chrome) node host.mjs "qa-win-$ROOM_KEY-${{ github.run_id }}-${{ matrix.flavor }}" out
+        run: mkdir -p out && test -n "$ROOM_KEY" && CHROME=$(which google-chrome) node host.mjs "qa-win-$ROOM_KEY-${{ github.run_id }}-${{ matrix.flavor }}-${{ matrix.n }}" out
   app:
-    strategy: {fail-fast: false, matrix: {flavor: "${{ fromJSON(inputs.flavors) }}"}}
+    strategy: {fail-fast: false, matrix: {flavor: "${{ fromJSON(inputs.flavors) }}", n: "${{ fromJSON(inputs.runs) }}"}}
     runs-on: ${{ matrix.flavor == 'legacy' && 'windows-2022' || 'windows-2025' }}
     timeout-minutes: 30
     steps:
@@ -37,4 +38,4 @@ jobs:
           if('${{ matrix.flavor }}' -eq 'scaled'){powershell -NoProfile -ExecutionPolicy Bypass -File scale.ps1}
           Start-Process ".\$($env:FILE)" -ArgumentList '/S' -Wait
           $e=Get-ChildItem "$env:LOCALAPPDATA\Programs","$env:ProgramFiles" -Recurse -Filter '8020 Connect.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-          node guest.mjs "$($e.FullName)" "qa-win-$env:ROOM_KEY-${{ github.run_id }}-${{ matrix.flavor }}"
+          node guest.mjs "$($e.FullName)" "qa-win-$env:ROOM_KEY-${{ github.run_id }}-${{ matrix.flavor }}-${{ matrix.n }}"

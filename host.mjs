@@ -17,7 +17,7 @@ for(let i=0;i<6&&!await ev("document.body.classList.contains('in-call')");i++){a
 await until("document.body.classList.contains('in-call')",'host in call');say('host in call');
 const admit=setInterval(()=>ev("fetch('/api/admit',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+JSON.parse(sessionStorage.getItem('8020-session')).token},body:JSON.stringify({all:true})}).then(r=>r.status)"),3000);
 const V="document.querySelector('.screen-control-button')";
-await until(`!!${V}&&[...document.querySelectorAll('.video-card')].some(c=>c.querySelector('.screen-control-button')&&c.querySelector('video')?.videoWidth>0)`,'button on guest tile',28*60000);await wait(9000);clearInterval(admit);
+await until(`!!${V}&&[...document.querySelectorAll('.video-card')].some(c=>c.querySelector('.screen-control-button')&&c.querySelector('video')?.videoWidth>0)`,'button on guest tile',6*60000);await wait(9000);clearInterval(admit);
 say('button',await ev(`JSON.stringify((()=>{const b=${V}.getBoundingClientRect(),c=${V}.parentElement.getBoundingClientRect(),v=${V}.parentElement.querySelector('video');return{top:b.top-c.top,right:c.right-b.right,video:[v.videoWidth,v.videoHeight]}})())`));await shot('w1.png');
 const status=()=>ev("document.getElementById('control-status')?.textContent");
 const press=async()=>{const c=JSON.parse(await ev(`JSON.stringify((()=>{const b=${V}.getBoundingClientRect();return[b.x+b.width/2,b.y+b.height/2]})())`));await mouse('mousePressed',c);await mouse('mouseReleased',c);};
