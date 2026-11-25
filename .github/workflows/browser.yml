@@ -1,0 +1,27 @@
+name: browser-lesson
+on:
+  workflow_dispatch:
+    inputs:
+      tests: {default: '["A","B"]'}
+      minutes: {default: '30'}
+      relay: {default: 'false'}
+permissions: {contents: read}
+jobs:
+  side:
+    strategy: {fail-fast: false, matrix: {test: "${{ fromJSON(inputs.tests) }}", side: [host, guest]}}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq pulseaudio pulseaudio-utils xvfb openbox python3-numpy ffmpeg p7zip-full libgtk-3-0t64 libnss3 libasound2t64 >/dev/null
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0 >/dev/null
+          if [ "${{ matrix.side }}" = host ]; then gh release download test-build -R ${{ github.repository }} -p 8020-Connect-0.2.52-x64.exe && 7z x -y -oexe 8020-Connect-0.2.52-x64.exe >/dev/null && (7z x -y -oapp "exe/\$PLUGINSDIR/app-64.7z" resources/app.asar >/dev/null || (find exe | head -20; exit 1)); cp app/resources/app.asar . ; ls -la app.asar; npm i --no-save electron@45.0.0 >/dev/null 2>&1; [ -x node_modules/electron/dist/electron ] || node node_modules/electron/install.js; ls -la node_modules/electron/dist/electron; fi
+          bash devices.sh
+      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", RELAY: "${{ inputs.relay }}"}
+        run: test -n "$ROOM_KEY" && export CHROME=$(which google-chrome) && timeout 5700 xvfb-run -a -s "-screen 0 1600x1000x24" sh -c 'openbox & sleep 2; node browser.mjs ${{ matrix.side }} ${{ matrix.test }} "qa-br-$ROOM_KEY-${{ github.run_id }}-${{ matrix.test }}" ${{ inputs.minutes }}'
+      - if: always() && matrix.side == 'host'
+        run: tail -20 out/app.err 2>/dev/null | cut -c1-300 || true
