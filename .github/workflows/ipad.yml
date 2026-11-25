@@ -1,0 +1,19 @@
+name: ipad
+on:
+  workflow_dispatch:
+    inputs:
+      configs: {default: '["{}"]'}
+      secs: {default: "75"}
+permissions: {contents: read}
+jobs:
+  call:
+    strategy: {fail-fast: false, max-parallel: 4, matrix: {cfg: "${{ fromJSON(inputs.configs) }}"}}
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - run: npm init -y >/dev/null && npm i playwright@1.56.1 >/dev/null && npx playwright install webkit >/dev/null
+      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", CFG: "${{ matrix.cfg }}", SECS: "${{ inputs.secs }}"}
+        run: test -n "$ROOM_KEY" && node ipad.mjs "qa-ipad-$ROOM_KEY-${{ github.run_id }}-${{ strategy.job-index }}"
