@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       relay: {default: 'false'}
+      settle: {default: 'false'}
       mode: {default: 'speech'}
       runs: {default: '[1]'}
       flavors: {default: '["current","scaled","legacy"]'}
@@ -17,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: {node-version: 24}
-      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", RELAY: "${{ inputs.relay }}", MODE: "${{ inputs.mode }}"}
+      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", RELAY: "${{ inputs.relay }}", MODE: "${{ inputs.mode }}", SWITCH: "${{ inputs.settle }}"}
         run: mkdir -p out && test -n "$ROOM_KEY" && CHROME=$(which google-chrome) node host.mjs "qa-win-$ROOM_KEY-${{ github.run_id }}-${{ matrix.flavor }}-${{ matrix.n }}" out
   app:
     strategy: {fail-fast: false, matrix: {flavor: "${{ fromJSON(inputs.flavors) }}", n: "${{ fromJSON(inputs.runs) }}"}}
