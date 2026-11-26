@@ -1,0 +1,36 @@
+name: e2e
+on:
+  workflow_dispatch:
+    inputs:
+      secs: {default: "45"}
+permissions: {contents: read}
+jobs:
+  guest:
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        include:
+          - {os: macos-15, guest: chrome}
+          - {os: macos-15, guest: safari}
+          - {os: macos-15, guest: firefox}
+          - {os: macos-15, guest: webkit}
+          - {os: windows-2025, guest: chrome}
+          - {os: windows-2025, guest: edge}
+          - {os: windows-2025, guest: firefox}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - shell: bash
+        run: npm init -y >/dev/null && npm i playwright@1.65.1 selenium-webdriver@4 >/dev/null && npx playwright install ${{ matrix.guest == 'firefox' && 'firefox' || matrix.guest == 'webkit' && 'webkit' || '' }} >/dev/null 2>&1 || true
+      - if: matrix.guest == 'safari'
+        run: sudo safaridriver --enable && safaridriver --version && defaults read /Applications/Safari.app/Contents/Info CFBundleShortVersionString
+      - shell: bash
+        env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", GUEST: "${{ matrix.guest }}", SECS: "${{ inputs.secs }}"}
+        run: test -n "$ROOM_KEY" && node e2e.mjs "qa-e2e-$ROOM_KEY-${{ github.run_id }}-${{ strategy.job-index }}"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: "shots-${{ matrix.os }}-${{ matrix.guest }}", path: out/, if-no-files-found: ignore}
