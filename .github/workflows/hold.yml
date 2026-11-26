@@ -1,0 +1,19 @@
+name: hold
+on:
+  workflow_dispatch:
+    inputs:
+      room: {required: true}
+      minutes: {default: "8"}
+      base: {default: "https://connect.8020musicschool.com:8443"}
+permissions: {contents: read}
+jobs:
+  host:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm init -y >/dev/null && npm i playwright@1.65.1 >/dev/null
+      - env: {BASE: "${{ inputs.base }}", MIN: "${{ inputs.minutes }}"}
+        run: node hold.mjs "${{ inputs.room }}"

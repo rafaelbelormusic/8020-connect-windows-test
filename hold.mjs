@@ -1,0 +1,12 @@
+// Holds a room on BASE as host (Chrome, fake 4K camera + screen), admits everyone, and logs
+// every 10 s what arrives from guests. For a real device joining from outside (e.g. the iPad).
+import {chromium} from 'playwright';
+const BASE=process.env.BASE||'https://connect.8020musicschool.com:8443',room=process.argv[2],MIN=+(process.env.MIN||8);const t0=Date.now(),say=(...a)=>console.log(((Date.now()-t0)/1000).toFixed(0).padStart(5),...a);
+const fake=`(()=>{const can=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');let i=0;setInterval(()=>{g.fillStyle='hsl('+(i++%360)+',60%,45%)';g.fillRect(0,0,w,h);g.fillStyle='#fff';g.fillRect((i*9)%w,h/3,w/8,h/8);},40);return c.captureStream(25);};const G=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getDisplayMedia=async()=>can(2992,1872);navigator.mediaDevices.getUserMedia=async o=>{if(!o||!o.video)return G(o);const s=can(3840,2160);if(o.audio)for(const a of (await G({audio:o.audio})).getAudioTracks())s.addTrack(a);return s;};})()`;
+const b=await chromium.launch({channel:'chrome',args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required','--mute-audio']});const c=await b.newContext({viewport:{width:1500,height:950}});await c.addInitScript(fake);const H=await c.newPage();
+await H.goto(BASE+'/');await H.waitForTimeout(4000);await H.evaluate(()=>document.getElementById('prejoin-share')?.click());await H.waitForTimeout(2500);
+await H.evaluate(r=>{for(const [k,v] of [['name','Host Test'],['room',r]]){const n=document.getElementById(k);n.value=v;n.dispatchEvent(new Event('input',{bubbles:true}));}document.getElementById('enter-room').click();},room);
+await H.waitForFunction(()=>document.body.classList.contains('in-call'),null,{timeout:60000});say('RAUM BEREIT',BASE+'/room/'+room);
+const end=Date.now()+MIN*60000;while(Date.now()<end){await H.evaluate(()=>[...document.querySelectorAll('#waiting-dialog button')].find(b=>/^Hereinlassen/.test(b.textContent))?.click());await H.waitForTimeout(10000);
+ say('HOST',await H.evaluate(()=>JSON.stringify({karten:[...document.querySelectorAll('#videos .video-card')].filter(c=>!c.hidden).map(c=>c.id.slice(0,18)+':'+(c.querySelector('video')?.videoWidth||0)),pegel:[...document.querySelectorAll('.tile-meter-fill')].map(f=>f.style.width).slice(0,4),status:document.getElementById('app-status-message')?.textContent?.slice(0,90)})));}
+await b.close();
