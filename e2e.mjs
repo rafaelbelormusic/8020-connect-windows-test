@@ -12,7 +12,7 @@ const hb=await chromium.launch({channel:'chrome',args:['--use-fake-device-for-me
 await H.goto(BASE+'/');await H.waitForTimeout(4000);await H.evaluate(()=>document.getElementById('prejoin-share')?.click());await H.waitForTimeout(2500);
 await H.evaluate(r=>{for(const [k,v] of [['name','Host Test'],['room',r]]){const n=document.getElementById(k);n.value=v;n.dispatchEvent(new Event('input',{bubbles:true}));}document.getElementById('enter-room').click();},room);
 await H.waitForFunction(()=>document.body.classList.contains('in-call'),null,{timeout:60000});say('Host im Raum');
-await H.evaluate(async()=>{const t=JSON.parse(sessionStorage.getItem('8020-session')).token;for(let v=0;v<20;v++){const r=await fetch('/api/policy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({version:v,waitingRoom:true,requireCamera:process.env.STRICT==='1'&&G!=='safari',requireMicrophone:process.env.STRICT==='1'&&G!=='safari'})});if(r.ok)return;}});
+await H.evaluate(async req=>{const t=JSON.parse(sessionStorage.getItem('8020-session')).token;for(let v=0;v<20;v++){const r=await fetch('/api/policy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({version:v,waitingRoom:true,requireCamera:req,requireMicrophone:req})});if(r.ok)return;}},process.env.STRICT==='1'&&G!=='safari');
 // guest
 let gp,close=async()=>{};const link=(process.env.GUEST_BASE||BASE)+'/room/'+room;
 if(G==='safari'){const {Builder,By}=await import('selenium-webdriver');const d=await new Builder().forBrowser('safari').build();close=()=>d.quit();
