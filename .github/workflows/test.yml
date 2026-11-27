@@ -32,7 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ROOM_KEY: ${{ secrets.ROOM_KEY }}
-          FILE: ${{ matrix.flavor == 'legacy' && '8020-Connect-0.2.52-windows-7-8-x64.exe' || '8020-Connect-0.2.52-x64.exe' }}
+          FILE: ${{ matrix.flavor == 'legacy' && '8020-Connect-0.2.55-windows-7-8-x64.exe' || '8020-Connect-0.2.55-x64.exe' }}
           SHA: ${{ matrix.flavor == 'legacy' && 'f8a505c321daee4e152151db1ae25855bd4d2ec3b3c65382e2fe6ea30c39f38f' || '6e4ed365baf08f050db4f2bad3c3f78b2f56b253e3c3e5fc6c5c45b6791846f0' }}
         run: |
           if(-not $env:ROOM_KEY){throw 'ROOM_KEY fehlt'}
