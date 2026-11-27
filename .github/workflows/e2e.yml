@@ -42,7 +42,7 @@ jobs:
         run: sudo safaridriver --enable && safaridriver --version && defaults read /Applications/Safari.app/Contents/Info CFBundleShortVersionString
       - shell: bash
         env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", GUEST: "${{ matrix.lane.guest }}", SECS: "${{ inputs.secs }}", BASE: "${{ inputs.base }}", GUEST_BASE: "${{ inputs.guest_base }}", STRICT: "${{ inputs.strict }}"}
-        run: test -n "$ROOM_KEY" && node e2e.mjs "qa-e2e-$ROOM_KEY-${{ github.run_id }}-${{ strategy.job-index }}-${{ matrix.n }}"
+        run: test -n "$ROOM_KEY" && node e2e.mjs "qa-e2e-$ROOM_KEY-${{ github.run_id }}-${{ strategy.job-index }}-${{ matrix.n }}-${{ github.run_attempt }}"
       - if: always()
         uses: actions/upload-artifact@v4
-        with: {name: "shots-${{ matrix.lane.os }}-${{ matrix.lane.guest }}-${{ matrix.n }}", path: out/, if-no-files-found: ignore}
+        with: {name: "shots-${{ matrix.lane.os }}-${{ matrix.lane.guest }}-${{ matrix.n }}-${{ github.run_attempt }}", path: out/, if-no-files-found: ignore}
