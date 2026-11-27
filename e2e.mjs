@@ -23,6 +23,7 @@ else{const eng=G==='firefox'?firefox:G==='webkit'?webkit:chromium;const opts=G==
  gp={goto:u=>p.goto(u),eval:(f,a)=>p.evaluate(f,a),wait:ms=>p.waitForTimeout(ms),shot:f=>p.screenshot({path:f})};}
 await gp.goto(link);await gp.wait(6000);say('Gast',G,'Einladungslink geladen');
 const typed=await gp.eval(()=>{const n=document.getElementById('name');if(!n)return 'kein Namensfeld';n.value='Gast Test';n.dispatchEvent(new Event('input',{bubbles:true}));const b=document.getElementById('enter-room');if(!b)return 'kein Knopf';if(b.disabled)return 'Knopf gesperrt: '+document.getElementById('room-target-status')?.textContent;b.click();return 'beigetreten';});say('Gast',typed);
+await sleep(4000);say('Gast-Bildschirm nach Klick',await gp.eval(()=>JSON.stringify({dialoge:[...document.querySelectorAll('dialog[open],[role=dialog],[role=alertdialog]')].map(d=>d.innerText.replace(/\s+/g,' ').slice(0,200)),hinweise:[...document.querySelectorAll('#notice,[role=status],[role=alert]')].map(n=>n.textContent.trim()).filter(Boolean).slice(0,5)})).catch(e=>'?'));
 let note=false;for(let i=0;i<20&&!note;i++){await sleep(500);note=await H.evaluate(()=>document.getElementById('waiting-dialog')?.open===true);}say('Warteraum-Meldung beim Host',note);
 await H.evaluate(()=>[...document.querySelectorAll('#waiting-dialog button')].find(b=>/^Hereinlassen/.test(b.textContent))?.click());
 let gIn=false;for(let i=0;i<40&&!gIn;i++){await sleep(500);gIn=await gp.eval(()=>document.body.classList.contains('in-call'));}say('Gast im Raum',gIn);
