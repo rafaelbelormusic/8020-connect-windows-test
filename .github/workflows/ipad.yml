@@ -4,6 +4,7 @@ on:
     inputs:
       configs: {default: '["{}"]'}
       secs: {default: "75"}
+      base: {default: "https://connect.8020musicschool.com:8443"}
 permissions: {contents: read}
 jobs:
   call:
@@ -15,5 +16,5 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22}
       - run: npm init -y >/dev/null && npm i playwright@1.65.1 >/dev/null && npx playwright install webkit >/dev/null
-      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", CFG: "${{ matrix.cfg }}", SECS: "${{ inputs.secs }}"}
+      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", CFG: "${{ matrix.cfg }}", SECS: "${{ inputs.secs }}", BASE: "${{ inputs.base }}"}
         run: test -n "$ROOM_KEY" && node ipad.mjs "qa-ipad-$ROOM_KEY-${{ github.run_id }}-${{ strategy.job-index }}"
