@@ -11,8 +11,9 @@ jobs:
   guest:
     strategy:
       fail-fast: false
-      max-parallel: 7
+      max-parallel: 10
       matrix:
+        n: [1, 2]
         include:
           - {os: macos-15, guest: chrome}
           - {os: macos-15, guest: safari}
@@ -29,11 +30,18 @@ jobs:
         with: {node-version: 22}
       - shell: bash
         run: npm init -y >/dev/null && npm i playwright@1.65.1 selenium-webdriver@4 >/dev/null && npx playwright install ${{ matrix.guest == 'firefox' && 'firefox' || matrix.guest == 'webkit' && 'webkit' || '' }} >/dev/null 2>&1 || true
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Set-Service Audiosrv -StartupType Automatic; Start-Service Audiosrv
+          choco install vb-cable -y --no-progress | Select-Object -Last 3
+          Start-Sleep 5
+          Get-CimInstance Win32_SoundDevice | Select-Object Name,Status | Format-Table -AutoSize
       - if: matrix.guest == 'safari'
         run: sudo safaridriver --enable && safaridriver --version && defaults read /Applications/Safari.app/Contents/Info CFBundleShortVersionString
       - shell: bash
         env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", GUEST: "${{ matrix.guest }}", SECS: "${{ inputs.secs }}", BASE: "${{ inputs.base }}", GUEST_BASE: "${{ inputs.guest_base }}", STRICT: "${{ inputs.strict }}"}
-        run: test -n "$ROOM_KEY" && node e2e.mjs "qa-e2e-$ROOM_KEY-${{ github.run_id }}-${{ strategy.job-index }}"
+        run: test -n "$ROOM_KEY" && node e2e.mjs "qa-e2e-$ROOM_KEY-${{ github.run_id }}-${{ strategy.job-index }}-${{ matrix.n }}"
       - if: always()
         uses: actions/upload-artifact@v4
-        with: {name: "shots-${{ matrix.os }}-${{ matrix.guest }}", path: out/, if-no-files-found: ignore}
+        with: {name: "shots-${{ matrix.os }}-${{ matrix.guest }}-${{ matrix.n }}", path: out/, if-no-files-found: ignore}
