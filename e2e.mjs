@@ -12,7 +12,7 @@ await H.evaluate(r=>{for(const [k,v] of [['name','Host Test'],['room',r]]){const
 await H.waitForFunction(()=>document.body.classList.contains('in-call'),null,{timeout:60000});say('Host im Raum');
 await H.evaluate(async()=>{const t=JSON.parse(sessionStorage.getItem('8020-session')).token;for(let v=0;v<20;v++){const r=await fetch('/api/policy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+t},body:JSON.stringify({version:v,waitingRoom:true,requireCamera:false,requireMicrophone:false})});if(r.ok)return;}});
 // guest
-let gp,close=async()=>{};const link=BASE+'/room/'+room;
+let gp,close=async()=>{};const link=(process.env.GUEST_BASE||BASE)+'/room/'+room;
 if(G==='safari'){const {Builder,By}=await import('selenium-webdriver');const d=await new Builder().forBrowser('safari').build();close=()=>d.quit();
  gp={goto:u=>d.get(u),eval:async(f,a)=>d.executeScript(`return (${f.toString()})(arguments[0])`,a),wait:ms=>sleep(ms)};}
 else{const eng=G==='firefox'?firefox:G==='webkit'?webkit:chromium;const opts=G==='firefox'?{firefoxUserPrefs:{'media.navigator.streams.fake':true,'media.navigator.permission.disabled':true}}:G==='webkit'?{}:{channel:G==='edge'?'msedge':'chrome',args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required','--mute-audio']};
