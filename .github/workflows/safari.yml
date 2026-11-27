@@ -1,0 +1,25 @@
+name: safari-series
+on:
+  workflow_dispatch:
+    inputs:
+      runs: {default: "[1,2,3,4,5]"}
+      secs: {default: "120"}
+      base: {default: "https://connect.8020musicschool.com"}
+      guest_base: {default: "https://www.8020musicschool.com"}
+permissions: {contents: read}
+jobs:
+  safari:
+    strategy:
+      fail-fast: false
+      matrix:
+        n: ${{ fromJSON(inputs.runs) }}
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - run: npm init -y >/dev/null && npm i playwright@1.65.1 selenium-webdriver@4 >/dev/null
+      - run: sudo safaridriver --enable && defaults read /Applications/Safari.app/Contents/Info CFBundleShortVersionString
+      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", GUEST: safari, SECS: "${{ inputs.secs }}", BASE: "${{ inputs.base }}", GUEST_BASE: "${{ inputs.guest_base }}", STRICT: "1"}
+        run: test -n "$ROOM_KEY" && node e2e.mjs "qa-saf-$ROOM_KEY-${{ github.run_id }}-${{ matrix.n }}-${{ github.run_attempt }}"
