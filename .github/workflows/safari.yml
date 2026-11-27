@@ -7,6 +7,7 @@ on:
       base: {default: "https://connect.8020musicschool.com"}
       guest_base: {default: "https://www.8020musicschool.com"}
       host_scale: {default: "1"}
+      admit_delay: {default: "0"}
 permissions: {contents: read}
 jobs:
   safari:
@@ -22,5 +23,5 @@ jobs:
         with: {node-version: 22}
       - run: npm init -y >/dev/null && npm i playwright@1.65.1 selenium-webdriver@4 >/dev/null
       - run: sudo safaridriver --enable && defaults read /Applications/Safari.app/Contents/Info CFBundleShortVersionString
-      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", GUEST: safari, SECS: "${{ inputs.secs }}", BASE: "${{ inputs.base }}", GUEST_BASE: "${{ inputs.guest_base }}", STRICT: "1", HOST_SCALE: "${{ inputs.host_scale }}"}
+      - env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", GUEST: safari, SECS: "${{ inputs.secs }}", BASE: "${{ inputs.base }}", GUEST_BASE: "${{ inputs.guest_base }}", STRICT: "1", HOST_SCALE: "${{ inputs.host_scale }}", ADMIT_DELAY: "${{ inputs.admit_delay }}"}
         run: test -n "$ROOM_KEY" && node e2e.mjs "qa-saf-$ROOM_KEY-${{ github.run_id }}-${{ matrix.n }}-${{ github.run_attempt }}"
