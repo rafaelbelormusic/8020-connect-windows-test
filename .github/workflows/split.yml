@@ -5,9 +5,11 @@ on:
       version: {default: '0.2.60'}
       sha: {required: true}
       restore: {default: '0'}
+      file: {default: ''}
+      runner: {default: 'windows-2025'}
 jobs:
   split:
-    runs-on: windows-2025
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -16,7 +18,7 @@ jobs:
       - shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          FILE: 8020-Connect-${{ inputs.version }}-x64.exe
+          FILE: ${{ inputs.file != '' && inputs.file || format('8020-Connect-{0}-x64.exe', inputs.version) }}
           SHA: ${{ inputs.sha }}
           EXPECT_RESTORE: ${{ inputs.restore }}
           OUT: out
