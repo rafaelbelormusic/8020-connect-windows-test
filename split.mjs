@@ -35,7 +35,7 @@ const dividers=(await list()).filter(p=>p.url.includes('browser-divider.html'));
 shot('1-nebeneinander');
 // Drag the border 150 px to the right with real-looking mouse input on the divider.
 {const left=visible.find(x=>x.url.includes('8020musicschool'))??visible[0],bar=await s.bar.ev('JSON.stringify({h:innerHeight,w:innerWidth,t:document.title})'),info=JSON.parse(bar);
- const title=ps('drag.ps1','-Title','80/20 Connect - Browser','-X',String(left.w+3),'-Y',String(info.h+200),'-DX','150');say('drag',title,'toolbar',bar);await wait(1500);
+ const title=ps('drag.ps1','-Title','Browser','-X',String(left.w+3),'-Y',String(info.h+200),'-DX','150');say('drag',title,'toolbar',bar);await wait(1500);
  w=await widths();const nowLeft=w.find(x=>x.url===left.url)?.w??0,others=w.filter(x=>x.vis==='visible'&&x.url!==left.url).map(x=>x.w);
  check(Math.abs(nowLeft-left.w-150)<=12,'echter Mauszug um 150 px verschiebt den Rand um ~150 px',left.w+' → '+nowLeft+' / rechts '+others.join(','));
  check(others.length===1&&Math.abs(nowLeft+6+others[0]-info.w)<=2,'Breiten + Rand = Fensterbreite',nowLeft+'+6+'+others[0]+' vs '+info.w);shot('2-gezogen');}

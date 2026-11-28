@@ -12,7 +12,7 @@ public static class D{
  [DllImport("user32.dll")]public static extern bool SetCursorPos(int x,int y);
  [DllImport("user32.dll")]public static extern void mouse_event(uint f,uint x,uint y,uint d,IntPtr e);
  [DllImport("user32.dll")]public static extern bool SetProcessDPIAware();
- public static IntPtr Find(string t){IntPtr f=IntPtr.Zero;EnumWindows((h,l)=>{var s=new StringBuilder(300);GetWindowText(h,s,300);if(f==IntPtr.Zero&&IsWindowVisible(h)&&s.ToString()==t)f=h;return true;},IntPtr.Zero);return f;}
+ public static IntPtr Find(string t){IntPtr f=IntPtr.Zero;EnumWindows((h,l)=>{var s=new StringBuilder(300);GetWindowText(h,s,300);if(f==IntPtr.Zero&&IsWindowVisible(h)&&s.ToString().Contains("Connect")&&s.ToString().EndsWith(t))f=h;return true;},IntPtr.Zero);return f;}
 }
 '@
 [D]::SetProcessDPIAware()|Out-Null
