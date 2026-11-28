@@ -13,13 +13,13 @@ async function connect(target){const ws=new WebSocket(target.webSocketDebuggerUr
  return{call,ev,close:()=>ws.close()};}
 async function find(test,label,ms=60000){const end=Date.now()+ms;for(;;){const t=(await list()).find(test);if(t)return t;if(Date.now()>end){say('targets',JSON.stringify((await list()).map(p=>[p.type,p.url.slice(0,100)])));throw Error('kein Ziel: '+label);}await wait(500);}}
 let mainId='';const tabsOf=async()=>(await list()).filter(p=>p.type==='page'&&p.id!==mainId&&!/browser-tabs\.html|browser-divider\.html|devtools|^data:/.test(p.url));
-async function widths(){const r=[];for(const t of await tabsOf()){try{const c=await connect(t);r.push({url:t.url.slice(0,60),w:await c.ev('innerWidth'),h:await c.ev('innerHeight'),vis:await c.ev('document.visibilityState')});c.close();}catch{}}return r;}
+async function widths(){const r=[];for(const t of await tabsOf()){try{const c=await connect(t);r.push({url:t.url.slice(0,60),w:await c.ev('innerWidth'),h:await c.ev('innerHeight'),vis:await c.ev('document.visibilityState')});if(/8020musicschool/.test(t.url)&&!r.diag){r.diag=1;await c.call('Runtime.enable');say('site',await c.ev("JSON.stringify({ua:navigator.userAgent.slice(0,140),text:document.body?.innerText.slice(0,160),title:document.title})"));}c.close();}catch{}}return r;}
 async function start(run){
  const app=spawn(exe,['--remote-debugging-port=9333','--use-fake-device-for-media-stream'],{stdio:['ignore','pipe','pipe']});let n=0;for(const st of[app.stdout,app.stderr])st.on('data',d=>{if(n++<30)say('APP',String(d).trim().slice(0,200));});
  if(run===1)say('first-run folder dialog:',ps('ui.ps1','-Button','Cancel','-Wait','40'));
- const page=await find(p=>p.type==='page'&&p.url.includes('connect.8020musicschool.com'),'Hauptseite',90000);mainId=page.id;const main=await connect(page);
+ const page0=await find(p=>p.type==='page'&&p.url.includes('connect.8020musicschool.com'),'Hauptseite',90000);mainId=page0.id;const main=await connect(page0);
  for(let i=0;i<60&&!await main.ev('!!window.connectDesktop?.sharedBrowserOpen');i++)await wait(1000);
- say('open',JSON.stringify(await main.ev('window.connectDesktop.sharedBrowserOpen().then(v=>JSON.stringify(v)).catch(e=>"ERR "+e.message)')));
+ for(let i=0;i<20;i++){const r=await main.ev('window.connectDesktop.sharedBrowserOpen().then(v=>JSON.stringify(v)).catch(e=>"ERR "+e.message)');say('open',r);if(!String(r).startsWith('ERR'))break;await wait(3000);}
  const bar=await connect(await find(p=>p.url.includes('browser-tabs.html'),'Browserleiste'));await wait(6000);
  return{app,main,bar};
 }
