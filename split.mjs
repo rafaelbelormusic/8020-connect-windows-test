@@ -30,23 +30,23 @@ await s.bar.ev("document.getElementById('split-x').click()");await wait(5000);
 say('nav',await s.bar.ev("window.browserTabs.action({kind:'navigate',url:'https://example.com/'}).then(()=>'ok').catch(e=>'ERR '+e.message)"));await wait(5000);
 let w=await widths();say('after split beside',JSON.stringify(w));
 const visible=w.filter(x=>x.vis==='visible');check(visible.length>=2,'zwei Bereiche sichtbar nebeneinander',JSON.stringify(visible));
-check(visible.length>=2&&visible.every(x=>x.w<1000&&x.w>200),'beide etwa halb so breit');
+{const bw=JSON.parse(await s.bar.ev('JSON.stringify(innerWidth)'));check(visible.length===2&&Math.abs(visible[0].w+6+visible[1].w-bw)<=2&&Math.abs(visible[0].w-visible[1].w)<=8,'beide halb so breit, zusammen Fensterbreite',visible.map(x=>x.w).join('+')+' vs '+bw);}
 const dividers=(await list()).filter(p=>p.url.includes('browser-divider.html'));check(dividers.length===1,'ein ziehbarer Rand',String(dividers.length));
 shot('1-nebeneinander');
 // Drag the border 150 px to the right with real-looking mouse input on the divider.
-if(dividers[0]){const d=await connect(dividers[0]);const before=visible.map(x=>x.w).join('/');
- await d.call('Input.dispatchMouseEvent',{type:'mousePressed',x:3,y:200,button:'left',buttons:1,clickCount:1});
- for(let i=1;i<=15;i++){await d.call('Input.dispatchMouseEvent',{type:'mouseMoved',x:3+i*10,y:200,button:'left',buttons:1});await wait(40);}
- await d.call('Input.dispatchMouseEvent',{type:'mouseReleased',x:153,y:200,button:'left',buttons:0,clickCount:1});d.close();await wait(1500);
- w=await widths();const after=w.filter(x=>x.vis==='visible').map(x=>x.w).join('/');check(before!==after,'Rand ziehen ändert die Breiten',before+' → '+after);shot('2-gezogen');}
+{const left=visible.find(x=>x.url.includes('8020musicschool'))??visible[0],bar=await s.bar.ev('JSON.stringify({h:innerHeight,w:innerWidth,t:document.title})'),info=JSON.parse(bar);
+ const title=ps('drag.ps1','-Title','80/20 Connect - Browser','-X',String(left.w+3),'-Y',String(info.h+200),'-DX','150');say('drag',title,'toolbar',bar);await wait(1500);
+ w=await widths();const nowLeft=w.find(x=>x.url===left.url)?.w??0,others=w.filter(x=>x.vis==='visible'&&x.url!==left.url).map(x=>x.w);
+ check(Math.abs(nowLeft-left.w-150)<=12,'echter Mauszug um 150 px verschiebt den Rand um ~150 px',left.w+' → '+nowLeft+' / rechts '+others.join(','));
+ check(others.length===1&&Math.abs(nowLeft+6+others[0]-info.w)<=2,'Breiten + Rand = Fensterbreite',nowLeft+'+6+'+others[0]+' vs '+info.w);shot('2-gezogen');}
 await s.bar.ev("document.getElementById('split-y').click()");await wait(5000);
 w=await widths();say('after split below',JSON.stringify(w));check(w.filter(x=>x.vis==='visible').length>=3,'drei Bereiche (rechts geteilt untereinander)');
 check((await list()).filter(p=>p.url.includes('browser-divider.html')).length===2,'zwei Ränder');shot('3-verschachtelt');
-const layoutBefore=JSON.stringify(w.filter(x=>x.vis==='visible').map(x=>[x.w,x.h]).sort());
+const sig=list=>JSON.stringify(list.map(x=>[x.url.replace(/[?#].*/,''),x.w,x.h]).sort());const layoutBefore=sig(w.filter(x=>!x.url.startsWith('file:')));
 await wait(3000);
 // Restart: does the arrangement come back?
 s.app.kill();await wait(5000);try{execFileSync('taskkill',['/F','/IM','8020 Connect.exe'],{stdio:'ignore'});}catch{}await wait(3000);
 s=await start(2);await wait(8000);
-w=await widths();const layoutAfter=JSON.stringify(w.filter(x=>x.vis==='visible').map(x=>[x.w,x.h]).sort());say('after restart',JSON.stringify(w));shot('4-nach-neustart');
+w=await widths();const layoutAfter=sig(w.filter(x=>!x.url.startsWith('file:')));say('after restart',JSON.stringify(w));shot('4-nach-neustart');
 if(process.env.EXPECT_RESTORE==='1'){check(layoutAfter===layoutBefore,'Anordnung nach Neustart gleich',layoutBefore+' vs '+layoutAfter);}else say('restore (nicht verlangt)',layoutBefore===layoutAfter?'gleich':'anders',layoutBefore,layoutAfter);
 s.app.kill();clearTimeout(timer);say('DONE',failed?'FAIL':'PASS',failed);process.exit(failed?1:0);
