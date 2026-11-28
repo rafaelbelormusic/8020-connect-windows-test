@@ -7,10 +7,10 @@ const ps=(file,...a)=>{try{return execFileSync('powershell',['-NoProfile','-Exec
 const shot=name=>{const b=ps('ui.ps1','-Shot');if(b.startsWith('PSERR'))return say('shot failed',b);fs.writeFileSync(path.join(out,name+'.jpg'),Buffer.from(b,'base64'));say('shot',name);};
 let failed=0;const check=(ok,label,detail='')=>{say(ok?'OK  ':'FAIL',label,detail);if(!ok)failed++;};
 const list=async()=>{try{return await(await fetch('http://127.0.0.1:9333/json/list')).json();}catch{return[];}};
-async function connect(target){const ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j;});let id=0;const pend=new Map();ws.onmessage=m=>{const d=JSON.parse(m.data);pend.get(d.id)?.(d.result);};
+async function connect(target){const ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((r,j)=>{ws.onopen=r;ws.onerror=j;});let id=0;const pend=new Map();const events=[];ws.onmessage=m=>{const d=JSON.parse(m.data);if(d.method)events.push(d);pend.get(d.id)?.(d.result);};
  const call=(method,params={})=>new Promise(r=>{pend.set(++id,r);ws.send(JSON.stringify({id,method,params}));});
  const ev=async e=>{const r=await call('Runtime.evaluate',{expression:e,awaitPromise:true,returnByValue:true,userGesture:true});return r?.result?.value??r?.exceptionDetails?.exception?.description;};
- return{call,ev,close:()=>ws.close()};}
+ return{call,ev,events,close:()=>ws.close()};}
 async function find(test,label,ms=60000){const end=Date.now()+ms;for(;;){const t=(await list()).find(test);if(t)return t;if(Date.now()>end){say('targets',JSON.stringify((await list()).map(p=>[p.type,p.url.slice(0,100)])));throw Error('kein Ziel: '+label);}await wait(500);}}
 let mainId='';const tabsOf=async()=>(await list()).filter(p=>p.type==='page'&&p.id!==mainId&&!/browser-tabs\.html|browser-divider\.html|devtools|^data:/.test(p.url));
 async function widths(){const r=[];for(const t of await tabsOf()){try{const c=await connect(t);r.push({url:t.url.slice(0,60),w:await c.ev('innerWidth'),h:await c.ev('innerHeight'),vis:await c.ev('document.visibilityState')});if(/8020musicschool/.test(t.url)&&!r.diag){r.diag=1;await c.call('Runtime.enable');say('site',await c.ev("JSON.stringify({ua:navigator.userAgent.slice(0,140),text:document.body?.innerText.slice(0,160),title:document.title})"));}c.close();}catch{}}return r;}
@@ -42,6 +42,26 @@ shot('1-nebeneinander');
 await s.bar.ev("document.getElementById('split-y').click()");await wait(5000);
 w=await widths();say('after split below',JSON.stringify(w));check(w.filter(x=>x.vis==='visible').length>=3,'drei Bereiche (rechts geteilt untereinander)');
 check((await list()).filter(p=>p.url.includes('browser-divider.html')).length===2,'zwei Ränder');shot('3-verschachtelt');
+// Two tabs in one pane (hide path) and Rafael's tools on this engine.
+{const act=a=>s.bar.ev(`window.browserTabs.action(${JSON.stringify(a)}).then(v=>JSON.stringify(v)).catch(e=>'ERR '+e.message)`);
+ const before=JSON.parse(await act({kind:'state'}));const prev=before.active;await act({kind:'add'});await wait(1500);
+ say('nav metronome',await act({kind:'navigate',url:'https://www.8020musicschool.com/metronome'}));await wait(9000);
+ const t=(await tabsOf()).find(x=>x.url.includes('/metronome'));if(t){const c=await connect(t);const errs=[];
+  await c.call('Runtime.enable');await c.call('Page.reload',{ignoreCache:true});await wait(9000);
+  say('metronome exceptions',JSON.stringify(c.events.filter(e=>e.method==='Runtime.exceptionThrown').map(e=>(e.params.exceptionDetails.exception?.description??e.params.exceptionDetails.text).slice(0,240)).slice(0,5)));
+  say('metronome console errors',JSON.stringify(c.events.filter(e=>e.method==='Runtime.consoleAPICalled'&&e.params.type==='error').map(e=>JSON.stringify(e.params.args.map(a=>a.value??a.description)).slice(0,240)).slice(0,5)));
+  say('metronome',await c.ev("JSON.stringify({title:document.title,text:document.body?.innerText.slice(0,200),play:!!document.querySelector('button')})"));c.close();}
+ const st=JSON.parse(await act({kind:'state'})),pane=st.tabs.find(x=>x.id===st.active)?.pane,same=st.tabs.filter(x=>x.pane===pane);
+ w=await widths();const shown=w.find(x=>x.url.includes('/metronome')),hidden=w.find(x=>x.url==='about:blank');
+ say('same pane',JSON.stringify(same.map(x=>[x.id,x.url.slice(0,40)])),JSON.stringify(w.map(x=>[x.url.slice(0,40),x.w,x.h,x.vis])));
+ check(same.length===2,'zwei Tabs im selben Bereich',String(same.length));
+ check(shown&&shown.w>300,'neuer Tab füllt den Bereich',JSON.stringify(shown));
+ check(hidden&&(hidden.w<=2||hidden.vis==='hidden'),'anderer Tab im Bereich ist versteckt',JSON.stringify(hidden));shot('5-zwei-tabs-ein-bereich');
+ await act({kind:'select',id:prev});await wait(2000);w=await widths();
+ const back=w.find(x=>x.url==='about:blank'),gone=w.find(x=>x.url.includes('/metronome'));
+ check(back&&back.w>300&&gone&&(gone.w<=2||gone.vis==='hidden'),'zurückwechseln zeigt den ersten Tab, versteckt den zweiten',JSON.stringify([back,gone]));
+ await act({kind:'panel',panel:'history'});await wait(1500);shot('6-verlauf-panel');await act({kind:'panel',panel:''});
+ await act({kind:'select',id:same.find(x=>x.id!==prev).id});await wait(1500);}
 const sig=list=>JSON.stringify(list.map(x=>[x.url.replace(/[?#].*/,''),x.w,x.h]).sort());const layoutBefore=sig(w.filter(x=>!x.url.startsWith('file:')));
 await wait(3000);
 // Restart: does the arrangement come back?
