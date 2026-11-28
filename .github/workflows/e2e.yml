@@ -7,6 +7,7 @@ on:
       guest_base: {default: ""}
       strict: {default: "1"}
       admit_delay: {default: "0"}
+      host_scale: {default: "0.5"}  # Host und Gast teilen sich einen Runner; 4K-Host (1) blockiert sonst den Gast (28.11.)
 permissions: {contents: read}
 jobs:
   guest:
@@ -42,7 +43,7 @@ jobs:
       - if: matrix.lane.guest == 'safari'
         run: sudo safaridriver --enable && safaridriver --version && defaults read /Applications/Safari.app/Contents/Info CFBundleShortVersionString
       - shell: bash
-        env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", GUEST: "${{ matrix.lane.guest }}", SECS: "${{ inputs.secs }}", BASE: "${{ inputs.base }}", GUEST_BASE: "${{ inputs.guest_base }}", STRICT: "${{ inputs.strict }}", ADMIT_DELAY: "${{ inputs.admit_delay }}"}
+        env: {ROOM_KEY: "${{ secrets.ROOM_KEY }}", GUEST: "${{ matrix.lane.guest }}", SECS: "${{ inputs.secs }}", BASE: "${{ inputs.base }}", GUEST_BASE: "${{ inputs.guest_base }}", STRICT: "${{ inputs.strict }}", ADMIT_DELAY: "${{ inputs.admit_delay }}", HOST_SCALE: "${{ inputs.host_scale }}"}
         run: test -n "$ROOM_KEY" && node e2e.mjs "qa-e2e-$ROOM_KEY-${{ github.run_id }}-${{ strategy.job-index }}-${{ matrix.n }}-${{ github.run_attempt }}"
       - if: always()
         uses: actions/upload-artifact@v4
