@@ -45,6 +45,8 @@ const recv=f=>f(async()=>{let dc=0,rtp=0;for(const pc of window.__pcs||[]){try{f
 const recvGrowth=async f=>{try{const a=JSON.parse(await recv(f));await sleep(3000);const b=JSON.parse(await recv(f));return JSON.stringify({mode:b.mode,dcBytesPer3s:b.dc-a.dc,rtpPacketsPer3s:b.rtp-a.rtp});}catch(e){return '?';}};
 say('EMPFANG Host',await recvGrowth(f=>H.evaluate(f)),'| Gast',G==='safari'?'n/a':await recvGrowth(f=>gp.eval(f)));
 say('HOST-HINWEISE',await H.evaluate(()=>JSON.stringify([...document.querySelectorAll('.join-failure')].map(n=>n.textContent.slice(0,120)))).catch(()=>'?'));
+const dbg=f=>f(()=>JSON.stringify(globalThis.connectAudioDebug?.()??'keine Diagnose'));
+say('AUDIO-DEBUG Host',await dbg(f=>H.evaluate(f)).catch(()=>'?'));say('AUDIO-DEBUG Gast',G==='safari'?'n/a':await dbg(f=>gp.eval(f)).catch(()=>'?'));
 const ownDiag=f=>f(()=>JSON.stringify({own:Math.max(0,...[...document.querySelectorAll('[id^=local-] .tile-meter-fill')].map(x=>parseFloat(x.style.width)||0)),tap:document.querySelector('.tap-to-start')?.hidden===false,status:(document.getElementById('app-status-message')||{}).textContent?.slice(0,120)}));
 say('TON-DIAG Host',await ownDiag(f=>H.evaluate(f)).catch(()=>'?'),'| Gast',await ownDiag(f=>gp.eval(f)).catch(()=>'?'));
 const hostAudio=await audioIn(f=>H.evaluate(f)).catch(()=>({a:-1})),guestAudio=G==='safari'?{a:'n/a'}:await audioIn(f=>gp.eval(f)).catch(()=>({a:-1}));say('TON (Pegel %) beim Host vom Gast',hMax,'| beim Gast vom Host',gMax,'| RTP',JSON.stringify(hostAudio),JSON.stringify(guestAudio));
