@@ -32,8 +32,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ROOM_KEY: ${{ secrets.ROOM_KEY }}
-          FILE: ${{ matrix.flavor == 'legacy' && '8020-Connect-0.2.60-windows-7-8-x64.exe' || '8020-Connect-0.2.60-x64.exe' }}
-          SHA: ${{ matrix.flavor == 'legacy' && '362b8c21cbf1c90e6a7678ca6502fb36733ea4c444d17d465ed85d810a4f4a8b' || '6ff8c963b53642e9d6ed07697c1b3849038b0d64102734a920aec63b54ae0480' }}
+          FILE: ${{ matrix.flavor == 'legacy' && '8020-Connect-0.2.61-windows-7-8-x64.exe' || '8020-Connect-0.2.61-x64.exe' }}
+          SHA: ${{ matrix.flavor == 'legacy' && 'b93183d2d9148a5876acc1e74f84d9c2cbb2d8dabaf1056da370d869cd6695e0' || 'ecc1537056c935ce6144de6e5d6d62072193dedf1c0e9cb8d9b23a11ddcaa22f' }}
         run: |
           if(-not $env:ROOM_KEY){throw 'ROOM_KEY fehlt'}
           gh release download test-build -R ${{ github.repository }} -p $env:FILE
