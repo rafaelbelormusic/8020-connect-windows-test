@@ -1,0 +1,31 @@
+name: split
+on:
+  workflow_dispatch:
+    inputs:
+      version: {default: '0.2.60'}
+      sha: {required: true}
+      restore: {default: '0'}
+jobs:
+  split:
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 24}
+      - shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILE: 8020-Connect-${{ inputs.version }}-x64.exe
+          SHA: ${{ inputs.sha }}
+          EXPECT_RESTORE: ${{ inputs.restore }}
+          OUT: out
+        run: |
+          gh release download test-build -R ${{ github.repository }} -p $env:FILE
+          $h=(Get-FileHash -Algorithm SHA256 $env:FILE).Hash.ToLower(); "SHA256 $h"; if($h -ne $env:SHA){throw 'Prüfsumme falsch'}
+          Start-Process ".\$($env:FILE)" -ArgumentList '/S' -Wait
+          $e=Get-ChildItem "$env:LOCALAPPDATA\Programs","$env:ProgramFiles" -Recurse -Filter '8020 Connect.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          node split.mjs "$($e.FullName)"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with: {name: split-shots, path: out}
