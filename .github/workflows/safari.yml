@@ -6,7 +6,7 @@ on:
       secs: {default: "120"}
       base: {default: "https://connect.8020musicschool.com"}
       guest_base: {default: "https://www.8020musicschool.com"}
-      host_scale: {default: "1"}
+      host_scale: {default: "0.5"}  # Host und Gast teilen sich einen 3-Kern-Runner; 4K-Kodieren des Hosts blockiert sonst Safari (28.11.)
       admit_delay: {default: "0"}
 permissions: {contents: read}
 jobs:
